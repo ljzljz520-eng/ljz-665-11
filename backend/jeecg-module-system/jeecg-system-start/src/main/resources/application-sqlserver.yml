@@ -17,7 +17,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,httpexchanges,jeecghttptrace
+        include: health,metrics,httpexchanges,jeecghttptrace
+  endpoint:
+    health:
+      # 开发环境展示健康检查明细（含 db 组件），生产环境建议改为 never
+      show-details: always
 
 spring:
   flyway:
@@ -140,9 +144,11 @@ spring:
       datasource:
         master:
           driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-          url: jdbc:sqlserver://127.0.0.1:1433;SelectMethod=cursor;DatabaseName=jeecgboot
-          username: jeecgboot
-          password: ??
+          # SQL Server 连接配置：开发环境默认连接本机 1433 端口的 temp1218 库，
+          # 可用环境变量 SQLSERVER_HOST / SQLSERVER_PORT / SQLSERVER_DATABASE / SQLSERVER_USERNAME / SQLSERVER_PASSWORD 覆盖
+          url: jdbc:sqlserver://${SQLSERVER_HOST:127.0.0.1}:${SQLSERVER_PORT:1433};SelectMethod=cursor;DatabaseName=${SQLSERVER_DATABASE:temp1218};encrypt=false;trustServerCertificate=true
+          username: ${SQLSERVER_USERNAME:sa}
+          password: ${SQLSERVER_PASSWORD:Supcon1304}
   #redis配置
   data:
     redis:
@@ -208,7 +214,7 @@ jeecg:
     #webapp文件路径
     webapp: /opt/webapp
   shiro:
-    excludeUrls: /test/jeecgDemo/demo3,/test/jeecgDemo/redisDemo/**,/bigscreen/category/**,/bigscreen/visual/**,/bigscreen/map/**,/jmreport/bigscreen2/**
+    excludeUrls: /test/jeecgDemo/demo3,/test/jeecgDemo/redisDemo/**,/bigscreen/category/**,/bigscreen/visual/**,/bigscreen/map/**,/jmreport/bigscreen2/**,/actuator/health/**
   #阿里云oss存储和大鱼短信秘钥配置
   oss:
     accessKey: ??

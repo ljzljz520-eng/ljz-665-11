@@ -17,7 +17,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,httpexchanges,jeecghttptrace
+        include: health,metrics,httpexchanges,jeecghttptrace
+  endpoint:
+    health:
+      # 开发环境展示健康检查明细（含 db 组件），生产环境建议改为 never
+      show-details: always
 
 spring:
 #  main:
@@ -151,10 +155,12 @@ spring:
           slow-sql-millis: 5000
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-          username: root
-          password: root
-          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 开发环境连接 SQL Server 的 temp1218 库（默认指向本机 docker 映射出的 1433 端口），
+          # 可用环境变量 SQLSERVER_HOST / SQLSERVER_PORT / SQLSERVER_DATABASE / SQLSERVER_USERNAME / SQLSERVER_PASSWORD 覆盖
+          driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+          url: jdbc:sqlserver://${SQLSERVER_HOST:127.0.0.1}:${SQLSERVER_PORT:1433};SelectMethod=cursor;DatabaseName=${SQLSERVER_DATABASE:temp1218};encrypt=false;trustServerCertificate=true
+          username: ${SQLSERVER_USERNAME:sa}
+          password: ${SQLSERVER_PASSWORD:Supcon1304}
 #        # shardingjdbc数据源
 #        sharding-db:
 #          driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
@@ -233,7 +239,7 @@ jeecg:
     #webapp文件路径
     webapp: /opt/webapp
   shiro:
-    excludeUrls: /test/jeecgDemo/demo3,/test/jeecgDemo/redisDemo/**,/bigscreen/category/**,/bigscreen/visual/**,/bigscreen/map/**,/jmreport/bigscreen2/**
+    excludeUrls: /test/jeecgDemo/demo3,/test/jeecgDemo/redisDemo/**,/bigscreen/category/**,/bigscreen/visual/**,/bigscreen/map/**,/jmreport/bigscreen2/**,/actuator/health/**
   # 短信发送方式 aliyun阿里云短信 tencent腾讯云短信
   smsSendType: aliyun
   #阿里云oss存储和大鱼短信秘钥配置

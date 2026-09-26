@@ -166,6 +166,64 @@
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
+    <!-- 启动看门狗：应用长时间停留在加载页（常见于后端不可用/数据库连接失败）时，给出可见的错误提示与排查指引，避免“白屏”无反馈 -->
+    <script>
+      (function () {
+        var BOOT_TIMEOUT_MS = 20000;
+        // 与 nginx.conf / vite 代理保持一致的后端前缀
+        var HEALTH_URL = '/jeecgboot/actuator/health';
+
+        function checkBackendHealth() {
+          return fetch(HEALTH_URL, { cache: 'no-store' })
+            .then(function (resp) {
+              return resp
+                .json()
+                .catch(function () {
+                  return null;
+                })
+                .then(function (body) {
+                  if (body && body.status) {
+                    return { reachable: true, text: body.status + '（HTTP ' + resp.status + '）' };
+                  }
+                  return { reachable: true, text: 'HTTP ' + resp.status };
+                });
+            })
+            .catch(function () {
+              return { reachable: false, text: '无法连接（后端未启动或已崩溃）' };
+            });
+        }
+
+        function renderBootError(health) {
+          var app = document.getElementById('app');
+          if (!app) return;
+          var panel = document.createElement('div');
+          panel.id = 'app-boot-error';
+          panel.style.cssText =
+            'max-width:640px;margin:12vh auto;padding:32px 36px;background:#fff;border:1px solid #ffccc7;' +
+            'border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.08);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;' +
+            'color:rgba(0,0,0,.85);line-height:1.8';
+          panel.innerHTML =
+            '<h2 style="margin:0 0 12px;color:#cf1322;font-size:20px;">应用未能正常启动</h2>' +
+            '<p style="margin:0 0 8px;">页面长时间停留在加载状态，通常是<b>后端服务不可用</b>（如数据库连接失败导致后端退出）引起的。</p>' +
+            '<p style="margin:0 0 8px;">后端健康检查（<code>' + HEALTH_URL + '</code>）：<b style="color:#cf1322;">' + health.text + '</b></p>' +
+            '<div style="margin:16px 0;padding:12px 16px;background:#f5f5f5;border-radius:4px;font-size:13px;">' +
+            '<b>排查建议：</b><br/>' +
+            '1. 执行 <code>docker compose ps</code> 确认 backend / db 容器状态；<br/>' +
+            '2. 执行 <code>docker logs jeecg-backend --tail 100</code> 查看是否有 [DB-CHECK] 报错；<br/>' +
+            '3. 确认 SQL Server 连接配置（库名 temp1218、端口 1433、账号密码，见 README「SQL Server 连接配置」）。' +
+            '</div>' +
+            '<button onclick="location.reload()" style="padding:6px 24px;background:#0065cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">重新加载</button>';
+          app.innerHTML = '';
+          app.appendChild(panel);
+        }
+
+        setTimeout(function () {
+          // Vue 挂载成功后会替换 #app 内的加载动画；加载动画仍在说明启动被卡住
+          if (!document.querySelector('#app .app-loading')) return;
+          checkBackendHealth().then(renderBootError);
+        }, BOOT_TIMEOUT_MS);
+      })();
+    </script>
     <!-- 百度统计 -->
     <script>
       var _hmt = _hmt || [];
