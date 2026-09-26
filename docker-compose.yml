@@ -1,0 +1,67 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: jeecg-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Supcon1304}
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  db-init:
+    build:
+      context: .
+      dockerfile: db/sqlserver/Dockerfile
+    container_name: jeecg-sqlserver-init
+    environment:
+      MSSQL_HOST: db
+      MSSQL_PORT: "1433"
+      MSSQL_DB: temp1218
+      MSSQL_USER: sa
+      MSSQL_PASSWORD: ${MSSQL_SA_PASSWORD:-Supcon1304}
+    depends_on:
+      - db
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    container_name: jeecg-redis
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+    container_name: jeecg-backend
+    depends_on:
+      - db-init
+      - redis
+    environment:
+      SPRING_PROFILES_ACTIVE: sqlserver
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVER_CLASS_NAME: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:sqlserver://db:1433;SelectMethod=cursor;DatabaseName=temp1218;encrypt=false;trustServerCertificate=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: sa
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${MSSQL_SA_PASSWORD:-Supcon1304}
+      JEECG_AI_CHAT_ENABLED: "false"
+      JEECG_FIREWALL_LOW_CODE_MODE: dev
+      JEECG_DOMAINURL_PC: http://localhost:3665
+    ports:
+      - "8665:8080"
+    volumes:
+      - ./data/uploads:/opt/upFiles
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: jeecg-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3665:80"
+
+volumes:
+  mssql-data:
