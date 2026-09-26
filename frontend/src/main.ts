@@ -22,6 +22,7 @@ import { useSso } from '/@/hooks/web/useSso';
 import { checkIsQiankunMicro } from "/@/qiankun/micro";
 import { autoUseQiankunMicro } from "/@/qiankun/micro/qiankunMicro";
 import { useAppStoreWithOut } from "@/store/modules/app";
+import { checkBackendHealth, renderBackendDownPage } from '/@/logics/checkBackendHealth';
 
 // 注册online模块lib
 import { registerPackages } from '/@/utils/monorepo/registerPackages';
@@ -33,6 +34,14 @@ async function main() {
     // await autoUseQiankunMicro(bootstrap)
     await autoUseQiankunMicro(bootstrap)
   } else {
+    // 挂载前先探测后端与数据库可用性：
+    // 连接失败时展示明确的错误提示页，而不是一直停留在 loading/白屏
+    const health = await checkBackendHealth();
+    if (!health.ok) {
+      console.error(`[JEECG] 后端健康检查未通过（${health.stage}）：${health.message}`);
+      renderBackendDownPage(health);
+      return;
+    }
     // 获取参数
     const props = getMainAppProps();
     // 普通启动

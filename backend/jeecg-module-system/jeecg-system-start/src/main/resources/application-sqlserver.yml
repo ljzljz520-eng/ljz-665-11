@@ -17,7 +17,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,httpexchanges,jeecghttptrace
+        # health 用于容器/运维探活与连接验证（db 指示器会报告 SQL Server 连通性）
+        include: health,metrics,httpexchanges,jeecghttptrace
 
 spring:
   flyway:
@@ -138,11 +139,21 @@ spring:
         filters: stat,slf4j
         # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
       datasource:
+        # ==================================================================
+        # SQL Server 连接配置（开发/profile 环境默认值）
+        #   主机:     127.0.0.1（Docker Compose 下由 SQLSERVER_HOST=db 覆盖）
+        #   端口:     1433
+        #   数据库:   temp1218
+        #   账号:     sa
+        #   密码:     Supcon1304（与 docker-compose 的 MSSQL_SA_PASSWORD 默认值一致，
+        #             可用环境变量 SQLSERVER_PASSWORD 覆盖，生产环境务必覆盖）
+        # 也可用 SQLSERVER_JDBC_URL 整体覆盖连接串。
+        # ==================================================================
         master:
           driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-          url: jdbc:sqlserver://127.0.0.1:1433;SelectMethod=cursor;DatabaseName=jeecgboot
-          username: jeecgboot
-          password: ??
+          url: ${SQLSERVER_JDBC_URL:jdbc:sqlserver://${SQLSERVER_HOST:127.0.0.1}:${SQLSERVER_PORT:1433};SelectMethod=cursor;DatabaseName=${SQLSERVER_DB:temp1218};encrypt=false;trustServerCertificate=true}
+          username: ${SQLSERVER_USER:sa}
+          password: ${SQLSERVER_PASSWORD:Supcon1304}
   #redis配置
   data:
     redis:

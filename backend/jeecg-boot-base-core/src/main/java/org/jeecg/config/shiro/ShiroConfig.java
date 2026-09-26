@@ -90,6 +90,8 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/sys/checkCaptcha", "anon"); //登录验证码接口排除
         filterChainDefinitionMap.put("/sys/smsCheckCaptcha", "anon"); //短信次数发送太多验证码排除
         filterChainDefinitionMap.put("/sys/login", "anon"); //登录接口排除
+        filterChainDefinitionMap.put("/sys/health", "anon"); //健康检查接口排除（前端启动探测与运维验证用）
+        filterChainDefinitionMap.put("/actuator/health", "anon"); //actuator健康端点排除（容器/运维探活用）
         filterChainDefinitionMap.put("/sys/mLogin", "anon"); //登录接口排除
         filterChainDefinitionMap.put("/sys/logout", "anon"); //登出接口排除
         filterChainDefinitionMap.put("/sys/thirdLogin/**", "anon"); //第三方登录
